@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.TrainerAvailability;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,125 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class TrainerAvailabilityController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<TrainerAvailability> _trainerAvailabilityService;
+        private readonly IMapper _mapper;
 
-        public TrainerAvailabilityController(CoachlyDbContext context)
+        public TrainerAvailabilityController(ICrudService<TrainerAvailability> trainerAvailabilityService,
+            IMapper mapper)
         {
-            _context = context;
+            _trainerAvailabilityService = trainerAvailabilityService;
+            _mapper = mapper;
         }
 
-        // GET: api/TrainerAvailability
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TrainerAvailability>>> GetTrainerAvailabilities()
+        public async Task<ActionResult<IEnumerable<TrainerAvailabilityDto>>> GetAllTrainerAvailabilities()
         {
-            return await _context.TrainerAvailabilities.ToListAsync();
+            try
+            {
+                var trainerAvailabilities = await _trainerAvailabilityService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<TrainerAvailabilityDto>>(trainerAvailabilities));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/TrainerAvailability/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TrainerAvailability>> GetTrainerAvailability(int id)
+        public async Task<ActionResult<TrainerAvailabilityDto>> GetTrainerAvailability(int id)
         {
-            var trainerAvailability = await _context.TrainerAvailabilities.FindAsync(id);
-
-            if (trainerAvailability == null)
+            try
             {
-                return NotFound();
-            }
+                var trainerAvailability = await _trainerAvailabilityService.GetEntityByIdAsync(id);
 
-            return trainerAvailability;
+                if (trainerAvailability == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<TrainerAvailabilityDto>(trainerAvailability));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving trainer availability: {e.Message}");
+            }
         }
 
-        // PUT: api/TrainerAvailability/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTrainerAvailability(int id, TrainerAvailability trainerAvailability)
+        public async Task<IActionResult> PutTrainerAvailability(int id, TrainerAvailabilityDto dto)
         {
-            if (id != trainerAvailability.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(trainerAvailability).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _trainerAvailabilityService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer availability with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!TrainerAvailabilityExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Trainer availability: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/TrainerAvailability
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<TrainerAvailability>> PostTrainerAvailability(TrainerAvailability trainerAvailability)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchTrainerAvailability(int id, TrainerAvailabilityUpdateDto dto)
         {
-            _context.TrainerAvailabilities.Add(trainerAvailability);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetTrainerAvailability", new { id = trainerAvailability.Id }, trainerAvailability);
+            try
+            {
+                return await _trainerAvailabilityService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer availability with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching trainer availability: {ex.Message}");
+            }
         }
 
-        // DELETE: api/TrainerAvailability/5
+        [HttpPost]
+        public async Task<ActionResult<TrainerAvailability>> PostTrainerAvailability(TrainerAvailabilityCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var trainerAvailability = _mapper.Map<TrainerAvailability>(dto);
+                return await _trainerAvailabilityService.CreateEntityAsync(trainerAvailability)
+                    ? CreatedAtAction(nameof(GetTrainerAvailability), new { id = trainerAvailability.Id },
+                        _mapper.Map<TrainerAvailabilityDto>(trainerAvailability))
+                    : BadRequest("Failed to create trainer availability.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating trainer availability: {ex.Message}");
+            }
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerAvailability(int id)
         {
-            var trainerAvailability = await _context.TrainerAvailabilities.FindAsync(id);
-            if (trainerAvailability == null)
+            try
             {
-                return NotFound();
+                return await _trainerAvailabilityService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Trainer availability with ID {id} not found.");
             }
-
-            _context.TrainerAvailabilities.Remove(trainerAvailability);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool TrainerAvailabilityExists(int id)
-        {
-            return _context.TrainerAvailabilities.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting Trainer availability: {ex.Message}");
+            }
         }
     }
 }

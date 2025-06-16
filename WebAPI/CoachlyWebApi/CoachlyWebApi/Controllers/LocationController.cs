@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.Location;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
-// using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CoachlyWebApi.Controllers;
 
@@ -19,15 +18,14 @@ public class LocationController : ControllerBase
         _locationService = locationCrudService;
         _mapper = mapper;
     }
-
-    // GET: api/Location
+    
     [HttpGet]
     public async Task<ActionResult<IEnumerable<LocationDto>>> GetAllLocations()
     {
         try
         {
             var locations = await _locationService.GetAllEntitiesAsync();
-            // return Ok(_mapper.)
+
             return Ok(_mapper.Map<IEnumerable<LocationDto>>(locations));
         }
         catch (Exception ex)
@@ -35,81 +33,99 @@ public class LocationController : ControllerBase
             return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
+    
+    [HttpGet("{id}")]
+    public async Task<ActionResult<LocationDto>> GetLocation(int id)
+    {
+        try
+        {
+            var location = await _locationService.GetEntityByIdAsync(id);
 
-//         // GET: api/Location/5
-//         [HttpGet("{id}")]
-//         public async Task<ActionResult<Location>> GetLocation(int id)
-//         {
-//             var location = await _context.Locations.FindAsync(id);
-//
-//             if (location == null)
-//             {
-//                 return NotFound();
-//             }
-//
-//             return location;
-//         }
-//
-//         // PUT: api/Location/5
-//         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//         [HttpPut("{id}")]
-//         public async Task<IActionResult> PutLocation(int id, Location location)
-//         {
-//             if (id != location.Id)
-//             {
-//                 return BadRequest();
-//             }
-//
-//             _context.Entry(location).State = EntityState.Modified;
-//
-//             try
-//             {
-//                 await _context.SaveChangesAsync();
-//             }
-//             catch (DbUpdateConcurrencyException)
-//             {
-//                 if (!LocationExists(id))
-//                 {
-//                     return NotFound();
-//                 }
-//                 else
-//                 {
-//                     throw;
-//                 }
-//             }
-//
-//             return NoContent();
-//         }
-//
-//         // POST: api/Location
-//         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-//         [HttpPost]
-//         public async Task<ActionResult<Location>> PostLocation(Location location)
-//         {
-//             _context.Locations.Add(location);
-//             await _context.SaveChangesAsync();
-//
-//             return CreatedAtAction("GetLocation", new { id = location.Id }, location);
-//         }
-//
-//         // DELETE: api/Location/5
-//         [HttpDelete("{id}")]
-//         public async Task<IActionResult> DeleteLocation(int id)
-//         {
-//             var location = await _context.Locations.FindAsync(id);
-//             if (location == null)
-//             {
-//                 return NotFound();
-//             }
-//
-//             _context.Locations.Remove(location);
-//             await _context.SaveChangesAsync();
-//
-//             return NoContent();
-//         }
-//
-//         private bool LocationExists(int id)
-//         {
-//             return _context.Locations.Any(e => e.Id == id);
-//         }
+            if (location == null)
+            {
+                return NoContent();
+            }
+
+            return Ok(_mapper.Map<LocationDto>(location));
+        }
+        catch (Exception e)
+        {
+            return StatusCode(500, $"Error retrieving Locations: {e.Message}");
+        }
+    }
+    
+    [HttpPut("{id}")]
+    public async Task<IActionResult> PutLocation(int id, LocationDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            if (id != dto.Id)
+            {
+                return BadRequest("Ids must match");
+            }
+
+            return await _locationService.UpdateEntityAsync(id, dto)
+                ? NoContent()
+                : NotFound($"Location with ID {id} not found.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error updating location: {ex.Message}");
+        }
+    }
+    
+    [HttpPatch("{id}")]
+    public async Task<IActionResult> PatchLocation(int id, LocationUpdateDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            return await _locationService.PatchEntityAsync(id, dto)
+                ? NoContent()
+                : NotFound($"Location with ID {id} not found.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error patching location: {ex.Message}");
+        }
+    }
+    
+    [HttpPost]
+    public async Task<ActionResult<LocationDto>> PostLocation(LocationCreateDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        try
+        {
+            var location = _mapper.Map<Location>(dto);
+            return await _locationService.CreateEntityAsync(location)
+                ? CreatedAtAction(nameof(GetLocation), new { id = location.Id }, _mapper.Map<LocationDto>(location))
+                : BadRequest("Failed to create location.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error creating location: {ex.Message}");
+        }
+    }
+    
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteLocation(int id)
+    {
+        try
+        {
+            return await _locationService.DeleteEntityAsync(id)
+                ? NoContent()
+                : NotFound($"Location with ID {id} not found.");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error deleting location: {ex.Message}");
+        }
+    }
 }

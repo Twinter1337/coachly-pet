@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.SessionParticipants;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,125 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class SessionParticipantController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<SessionParticipant> _sessionParticipantService;
+        private readonly IMapper _mapper;
 
-        public SessionParticipantController(CoachlyDbContext context)
+        public SessionParticipantController(ICrudService<SessionParticipant> sessionParticipantService, IMapper mapper)
         {
-            _context = context;
+            _sessionParticipantService = sessionParticipantService;
+            _mapper = mapper;
         }
 
-        // GET: api/SessionParticipant
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<SessionParticipant>>> GetSessionParticipants()
+        public async Task<ActionResult<IEnumerable<SessionParticipantDto>>> GetAllSessionParticipants()
         {
-            return await _context.SessionParticipants.ToListAsync();
+            try
+            {
+                var sessionParticipants = await _sessionParticipantService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<SessionParticipantDto>>(sessionParticipants));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/SessionParticipant/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<SessionParticipant>> GetSessionParticipant(int id)
+        public async Task<ActionResult<SessionParticipantDto>> GetSessionParticipant(int id)
         {
-            var sessionParticipant = await _context.SessionParticipants.FindAsync(id);
-
-            if (sessionParticipant == null)
+            try
             {
-                return NotFound();
-            }
+                var sessionParticipant = await _sessionParticipantService.GetEntityByIdAsync(id);
 
-            return sessionParticipant;
+                if (sessionParticipant == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<SessionParticipantDto>(sessionParticipant));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving session participants: {e.Message}");
+            }
         }
 
-        // PUT: api/SessionParticipant/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSessionParticipant(int id, SessionParticipant sessionParticipant)
+        public async Task<IActionResult> PutSessionParticipant(int id, SessionParticipantDto dto)
         {
-            if (id != sessionParticipant.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(sessionParticipant).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _sessionParticipantService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Session participant with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!SessionParticipantExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating session participant: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/SessionParticipant
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<SessionParticipant>> PostSessionParticipant(SessionParticipant sessionParticipant)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchSessionParticipant(int id, SessionParticipantUpdateDto dto)
         {
-            _context.SessionParticipants.Add(sessionParticipant);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetSessionParticipant", new { id = sessionParticipant.Id }, sessionParticipant);
+            try
+            {
+                return await _sessionParticipantService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Session participant with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching session participant: {ex.Message}");
+            }
         }
 
-        // DELETE: api/SessionParticipant/5
+        [HttpPost]
+        public async Task<ActionResult<SessionParticipantDto>> PostSessionParticipant(
+            SessionParticipantCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var sessionParticipant = _mapper.Map<SessionParticipant>(dto);
+                return await _sessionParticipantService.CreateEntityAsync(sessionParticipant)
+                    ? CreatedAtAction(nameof(GetSessionParticipant), new { id = sessionParticipant.Id },
+                        _mapper.Map<SessionParticipantDto>(sessionParticipant))
+                    : BadRequest("Failed to create session participant.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating session participant: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSessionParticipant(int id)
         {
-            var sessionParticipant = await _context.SessionParticipants.FindAsync(id);
-            if (sessionParticipant == null)
+            try
             {
-                return NotFound();
+                return await _sessionParticipantService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Session participant with ID {id} not found.");
             }
-
-            _context.SessionParticipants.Remove(sessionParticipant);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool SessionParticipantExists(int id)
-        {
-            return _context.SessionParticipants.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting session participant: {ex.Message}");
+            }
         }
     }
 }

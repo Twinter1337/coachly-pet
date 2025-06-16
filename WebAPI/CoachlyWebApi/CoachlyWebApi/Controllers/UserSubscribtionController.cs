@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.UserSubscibtion;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,124 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class UserSubscribtionController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<UserSubscribtion> _userSubscribtionService;
+        private readonly IMapper _mapper;
 
-        public UserSubscribtionController(CoachlyDbContext context)
+        public UserSubscribtionController(ICrudService<UserSubscribtion> _userSubscribtion, IMapper mapper)
         {
-            _context = context;
+            _userSubscribtionService = _userSubscribtion;
+            _mapper = mapper;
         }
 
-        // GET: api/UserSubscribtion
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<UserSubscribtion>>> GetUserSubscribtions()
+        public async Task<ActionResult<IEnumerable<UserSubscribtionDto>>> GetAllUserSubscribtions()
         {
-            return await _context.UserSubscribtions.ToListAsync();
+            try
+            {
+                var userSubscribtions = await _userSubscribtionService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<UserSubscribtionDto>>(userSubscribtions));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/UserSubscribtion/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<UserSubscribtion>> GetUserSubscribtion(int id)
+        public async Task<ActionResult<UserSubscribtionDto>> GetUserSubscribtion(int id)
         {
-            var userSubscribtion = await _context.UserSubscribtions.FindAsync(id);
-
-            if (userSubscribtion == null)
+            try
             {
-                return NotFound();
-            }
+                var userSubscribtion = await _userSubscribtionService.GetEntityByIdAsync(id);
 
-            return userSubscribtion;
+                if (userSubscribtion == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<UserSubscribtionDto>(userSubscribtion));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving user subscribtion: {e.Message}");
+            }
         }
 
-        // PUT: api/UserSubscribtion/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUserSubscribtion(int id, UserSubscribtion userSubscribtion)
+        public async Task<IActionResult> PutUserSubscribtion(int id, UserSubscribtionDto dto)
         {
-            if (id != userSubscribtion.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(userSubscribtion).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _userSubscribtionService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"User subscribtion with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!UserSubscribtionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating user subscribtion: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/UserSubscribtion
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<UserSubscribtion>> PostUserSubscribtion(UserSubscribtion userSubscribtion)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchUserSubscribtion(int id, UserSubscribtionUpdateDto dto)
         {
-            _context.UserSubscribtions.Add(userSubscribtion);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetUserSubscribtion", new { id = userSubscribtion.Id }, userSubscribtion);
+            try
+            {
+                return await _userSubscribtionService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"User subscribtion with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching user subscribtion: {ex.Message}");
+            }
         }
 
-        // DELETE: api/UserSubscribtion/5
+        [HttpPost]
+        public async Task<ActionResult<UserSubscribtionDto>> PostUserSubscribtion(UserSubscribtionCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var userSubscribtion = _mapper.Map<UserSubscribtion>(dto);
+                return await _userSubscribtionService.CreateEntityAsync(userSubscribtion)
+                    ? CreatedAtAction(nameof(GetUserSubscribtion), new { id = userSubscribtion.Id },
+                        _mapper.Map<UserSubscribtionDto>(userSubscribtion))
+                    : BadRequest("Failed to create user subscribtion.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating user subscribtion: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUserSubscribtion(int id)
         {
-            var userSubscribtion = await _context.UserSubscribtions.FindAsync(id);
-            if (userSubscribtion == null)
+            try
             {
-                return NotFound();
+                return await _userSubscribtionService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"User subscribtion with ID {id} not found.");
             }
-
-            _context.UserSubscribtions.Remove(userSubscribtion);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool UserSubscribtionExists(int id)
-        {
-            return _context.UserSubscribtions.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting user subscribtion: {ex.Message}");
+            }
         }
     }
 }

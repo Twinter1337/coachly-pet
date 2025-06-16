@@ -129,7 +129,7 @@ public partial class CoachlyDbContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("review_pkey");
 
-            entity.ToTable("review");
+            entity.ToTable("reviews");
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)

@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.TrainerSpecialization;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,126 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class TrainerSpecializationController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<TrainerSpecialization> _trainerSpecializationService;
+        private readonly IMapper _mapper;
 
-        public TrainerSpecializationController(CoachlyDbContext context)
+        public TrainerSpecializationController(ICrudService<TrainerSpecialization> trainerSpecializationService,
+            IMapper mapper)
         {
-            _context = context;
+            _trainerSpecializationService = trainerSpecializationService;
+            _mapper = mapper;
         }
 
-        // GET: api/TrainerSpecialization
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TrainerSpecialization>>> GetTrainerSpecializations()
+        public async Task<ActionResult<IEnumerable<TrainerSpecializationDto>>> GetAllTrainerSpecializations()
         {
-            return await _context.TrainerSpecializations.ToListAsync();
+            try
+            {
+                var trainerSpecializations = await _trainerSpecializationService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<TrainerSpecializationDto>>(trainerSpecializations));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/TrainerSpecialization/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TrainerSpecialization>> GetTrainerSpecialization(int id)
+        public async Task<ActionResult<TrainerSpecializationDto>> GetTrainerSpecialization(int id)
         {
-            var trainerSpecialization = await _context.TrainerSpecializations.FindAsync(id);
-
-            if (trainerSpecialization == null)
+            try
             {
-                return NotFound();
-            }
+                var trainerSpecialization = await _trainerSpecializationService.GetEntityByIdAsync(id);
 
-            return trainerSpecialization;
+                if (trainerSpecialization == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<TrainerSpecializationDto>(trainerSpecialization));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving trainer specialization: {e.Message}");
+            }
         }
 
-        // PUT: api/TrainerSpecialization/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTrainerSpecialization(int id, TrainerSpecialization trainerSpecialization)
+        public async Task<IActionResult> PutTrainerSpecialization(int id, TrainerSpecializationDto dto)
         {
-            if (id != trainerSpecialization.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(trainerSpecialization).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _trainerSpecializationService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer specialization with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!TrainerSpecializationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Trainer specialization: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/TrainerSpecialization
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<TrainerSpecialization>> PostTrainerSpecialization(TrainerSpecialization trainerSpecialization)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchTrainerSpecialization(int id, TrainerSpecializationUpdateDto dto)
         {
-            _context.TrainerSpecializations.Add(trainerSpecialization);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetTrainerSpecialization", new { id = trainerSpecialization.Id }, trainerSpecialization);
+            try
+            {
+                return await _trainerSpecializationService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer specialization with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching trainer specialization: {ex.Message}");
+            }
         }
 
-        // DELETE: api/TrainerSpecialization/5
+        [HttpPost]
+        public async Task<ActionResult<TrainerSpecializationDto>> PostTrainerSpecialization(
+            TrainerSpecializationCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var trainerSpecialization = _mapper.Map<TrainerSpecialization>(dto);
+                return await _trainerSpecializationService.CreateEntityAsync(trainerSpecialization)
+                    ? CreatedAtAction(nameof(GetTrainerSpecialization), new { id = trainerSpecialization.Id },
+                        _mapper.Map<TrainerSpecializationDto>(trainerSpecialization))
+                    : BadRequest("Failed to create trainer specialization.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating trainer specialization: {ex.Message}");
+            }
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerSpecialization(int id)
         {
-            var trainerSpecialization = await _context.TrainerSpecializations.FindAsync(id);
-            if (trainerSpecialization == null)
+            try
             {
-                return NotFound();
+                return await _trainerSpecializationService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Trainer specialization with ID {id} not found.");
             }
-
-            _context.TrainerSpecializations.Remove(trainerSpecialization);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool TrainerSpecializationExists(int id)
-        {
-            return _context.TrainerSpecializations.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting trainer specialization: {ex.Message}");
+            }
         }
     }
 }

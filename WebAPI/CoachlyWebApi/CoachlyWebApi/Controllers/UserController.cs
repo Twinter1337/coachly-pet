@@ -1,6 +1,8 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.UserDtos;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -8,95 +10,123 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<User> _userService;
+        private readonly IMapper _mapper;
 
-        public UserController(CoachlyDbContext context)
+        public UserController(ICrudService<User> userService, IMapper mapper)
         {
-            _context = context;
+            _userService = userService;
+            _mapper = mapper;
         }
 
-        // GET: api/User
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAllUsers()
         {
-            return await _context.Users.ToListAsync();
+            try
+            {
+                var users = await _userService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<UserDto>>(users));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/User/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
+        public async Task<ActionResult<UserDto>> GetUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-
-            if (user == null)
+            try
             {
-                return NotFound();
-            }
+                var user = await _userService.GetEntityByIdAsync(id);
 
-            return user;
+                if (user == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<UserDto>(user));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving user: {e.Message}");
+            }
         }
 
-        // PUT: api/User/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
+        public async Task<IActionResult> PutUser(int id, UserDto dto)
         {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _userService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"User with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating user: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/User
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchUser(int id, UserUpdateDto dto)
         {
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            try
+            {
+                return await _userService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"User with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching user: {ex.Message}");
+            }
         }
 
-        // DELETE: api/User/5
+        [HttpPost]
+        public async Task<ActionResult<UserDto>> PostUser(UserCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var user = _mapper.Map<User>(dto);
+                return await _userService.CreateEntityAsync(user)
+                    ? CreatedAtAction(nameof(GetUser), new { id = user.Id }, _mapper.Map<UserDto>(user))
+                    : BadRequest("Failed to create user.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating user: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _context.Users.FindAsync(id);
-            if (user == null)
+            try
             {
-                return NotFound();
+                return await _userService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"User with ID {id} not found.");
             }
-
-            _context.Users.Remove(user);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool UserExists(int id)
-        {
-            return _context.Users.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting user: {ex.Message}");
+            }
         }
     }
 }

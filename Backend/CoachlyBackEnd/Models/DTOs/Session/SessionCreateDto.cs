@@ -19,9 +19,8 @@ public class SessionCreateDto
 
     [Required]
     public DateTime ScheduledAt { get; set; }
-
-    [Required]
-    public int PaymentId { get; set; }
+    
+    public int? PaymentId { get; set; }
     
     public SessionStatus Status { get; set; }
     

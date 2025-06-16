@@ -22,10 +22,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+    .AddJsonOptions(options => { options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()); });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddMemoryCache();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -58,7 +55,7 @@ builder.Services.AddDbContext<CoachlyDbContext>(options =>
             o.MapEnum<UserRole>("user_role");
             o.MapEnum<CurrencyType>("currency_type");
         })
-    );
+);
 
 var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key is not configured");
 var key = Encoding.ASCII.GetBytes(jwtKey);
@@ -81,92 +78,104 @@ builder.Services.AddAuthentication("Bearer")
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ICrudService<Location>, CrudService<Location>>();
+builder.Services.AddScoped<ICrudService<Payment>, CrudService<Payment>>();
+builder.Services.AddScoped<ICrudService<Review>, CrudService<Review>>();
+builder.Services.AddScoped<ICrudService<Session>, CrudService<Session>>();
+builder.Services.AddScoped<ICrudService<SessionParticipant>, CrudService<SessionParticipant>>();
+builder.Services.AddScoped<ICrudService<Specialization>, CrudService<Specialization>>();
+builder.Services.AddScoped<ICrudService<Subscribtion>, CrudService<Subscribtion>>();
+builder.Services.AddScoped<ICrudService<TrainerAvailability>, CrudService<TrainerAvailability>>();
+builder.Services.AddScoped<ICrudService<Trainer>, CrudService<Trainer>>();
+builder.Services.AddScoped<ICrudService<TrainerDocument>, CrudService<TrainerDocument>>();
+builder.Services.AddScoped<ICrudService<TrainerSpecialization>, CrudService<TrainerSpecialization>>();
+builder.Services.AddScoped<ICrudService<User>, CrudService<User>>();
+builder.Services.AddScoped<ICrudService<UserSubscribtion>, CrudService<UserSubscribtion>>();
 
 //Swagger 
-    builder.Services.AddSwaggerGen(c =>
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
     {
-        c.SwaggerDoc("v1", new OpenApiInfo
+        Title = "Coachly API",
+        Version = "v1",
+        Description = "API for Coachly Web Application",
+        Contact = new OpenApiContact
         {
-            Title = "Coachly API",
-            Version = "v1",
-            Description = "API for Coachly Web Application",
-            Contact = new OpenApiContact
-            {
-                Name = "Your Name",
-                Email = "contact@example.com"
-            }
-        });
-
-        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-        {
-            Name = "Authorization",
-            Type = SecuritySchemeType.Http,
-            Scheme = "Bearer",
-            BearerFormat = "JWT",
-            In = ParameterLocation.Header,
-            Description = "JWT Authorization header using the Bearer scheme."
-        });
-
-        c.AddSecurityRequirement(new OpenApiSecurityRequirement
-        {
-            {
-                new OpenApiSecurityScheme
-                {
-                    Reference = new OpenApiReference
-                    {
-                        Type = ReferenceType.SecurityScheme,
-                        Id = "Bearer"
-                    }
-                },
-                Array.Empty<string>()
-            }
-        });
-
-        var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
-        var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-        if (File.Exists(xmlPath))
-        {
-            c.IncludeXmlComments(xmlPath);
+            Name = "Your Name",
+            Email = "contact@example.com"
         }
     });
-    
-    var app = builder.Build();
 
-    app.UseCors("AllowLocalhost3000");
-
-    if (app.Environment.IsDevelopment())
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        app.UseDeveloperExceptionPage();
-        app.UseSwagger();
-        app.UseSwaggerUI(c =>
-        {
-            c.SwaggerEndpoint("/swagger/v1/swagger.json", "Coachly API v1");
-            c.DisplayRequestDuration();
-            c.EnableDeepLinking();
-            c.EnableFilter();
-        });
-    }
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
 
-    app.UseHttpsRedirection();
-    app.UseRouting();
-    app.UseAuthentication();
-    app.UseAuthorization();
-
-    app.MapControllers();
-
-    using (var scope = app.Services.CreateScope())
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
-        var services = scope.ServiceProvider;
-        try
         {
-            var context = services.GetRequiredService<CoachlyDbContext>();
-            context.Database.Migrate();
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
         }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "An error occurred while migrating the database.");
-        }
-    }
+    });
 
-    app.Run();
+    var xmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        c.IncludeXmlComments(xmlPath);
+    }
+});
+
+var app = builder.Build();
+
+app.UseCors("AllowLocalhost3000");
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Coachly API v1");
+        c.DisplayRequestDuration();
+        c.EnableDeepLinking();
+        c.EnableFilter();
+    });
+}
+
+app.UseHttpsRedirection();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<CoachlyDbContext>();
+        context.Database.Migrate();
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while migrating the database.");
+    }
+}
+
+app.Run();

@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.Session;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,118 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class SessionController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<Session> _sessionService;
+        private readonly IMapper _mapper;
 
-        public SessionController(CoachlyDbContext context)
+        public SessionController(ICrudService<Session> sessionService, IMapper mapper)
         {
-            _context = context;
+            _sessionService = sessionService;
+            _mapper = mapper;
         }
 
-        // GET: api/Session
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Session>>> GetSessions()
+        public async Task<ActionResult<IEnumerable<SessionDto>>> GetAllSessions()
         {
-            return await _context.Sessions.ToListAsync();
+            try
+            {
+                var sessions = await _sessionService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<SessionDto>>(sessions));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/Session/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Session>> GetSession(int id)
+        public async Task<ActionResult<SessionDto>> GetSession(int id)
         {
-            var session = await _context.Sessions.FindAsync(id);
-
-            if (session == null)
+            try
             {
-                return NotFound();
+                var session = await _sessionService.GetEntityByIdAsync(id);
+                
+                return Ok(_mapper.Map<SessionDto>(session));
             }
-
-            return session;
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving session: {ex.Message}");
+            }
         }
 
-        // PUT: api/Session/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSession(int id, Session session)
+        public async Task<IActionResult> PutSession(int id, SessionDto dto)
         {
-            if (id != session.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(session).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _sessionService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Session with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!SessionExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Session: {ex.Message}");
             }
-
-            return NoContent();
         }
-
-        // POST: api/Session
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Session>> PostSession(Session session)
+        
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchSession(int id, SessionUpdateDto dto)
         {
-            _context.Sessions.Add(session);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetSession", new { id = session.Id }, session);
+            try
+            {
+                return await _sessionService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Session with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching session: {ex.Message}");
+            }
         }
 
-        // DELETE: api/Session/5
+        [HttpPost]
+        public async Task<ActionResult<SessionDto>> PostSession(SessionCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var session = _mapper.Map<Session>(dto);
+                return await _sessionService.CreateEntityAsync(session)
+                    ? CreatedAtAction(nameof(GetSession), new { id = session.Id }, _mapper.Map<SessionDto>(session))
+                    : BadRequest("Failed to create session.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating session: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSession(int id)
         {
-            var session = await _context.Sessions.FindAsync(id);
-            if (session == null)
+            try
             {
-                return NotFound();
+                return await _sessionService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Session with ID {id} not found.");
             }
-
-            _context.Sessions.Remove(session);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool SessionExists(int id)
-        {
-            return _context.Sessions.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting session: {ex.Message}");
+            }
         }
     }
 }

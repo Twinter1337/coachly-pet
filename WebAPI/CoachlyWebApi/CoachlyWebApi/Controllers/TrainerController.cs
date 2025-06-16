@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.TrainerDtos;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,123 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class TrainerController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<Trainer> _trainerService;
+        private readonly IMapper _mapper;
 
-        public TrainerController(CoachlyDbContext context)
+        public TrainerController(ICrudService<Trainer> trainerService, IMapper mapper)
         {
-            _context = context;
+            _trainerService = trainerService;
+            _mapper = mapper;
         }
-
-        // GET: api/Trainer
+        
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Trainer>>> GetTrainers()
+        public async Task<ActionResult<IEnumerable<TrainerDto>>> GetAllTrainers()
         {
-            return await _context.Trainers.ToListAsync();
-        }
+            try
+            {
+                var trainers = await _trainerService.GetAllEntitiesAsync();
 
-        // GET: api/Trainer/5
+                return Ok(_mapper.Map<IEnumerable<TrainerDto>>(trainers));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        
         [HttpGet("{id}")]
-        public async Task<ActionResult<Trainer>> GetTrainer(int id)
+        public async Task<ActionResult<TrainerDto>> GetTrainer(int id)
         {
-            var trainer = await _context.Trainers.FindAsync(id);
-
-            if (trainer == null)
+            try
             {
-                return NotFound();
-            }
+                var trainer = await _trainerService.GetEntityByIdAsync(id);
 
-            return trainer;
+                if (trainer == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<TrainerDto>(trainer));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving trainer: {e.Message}");
+            }
         }
-
-        // PUT: api/Trainer/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTrainer(int id, Trainer trainer)
+        public async Task<IActionResult> PutTrainer(int id, TrainerDto dto)
         {
-            if (id != trainer.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(trainer).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _trainerService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!TrainerExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Trainer: {ex.Message}");
             }
-
-            return NoContent();
         }
-
-        // POST: api/Trainer
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Trainer>> PostTrainer(Trainer trainer)
+        
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchTrainer(int id, TrainerUpdateDto dto)
         {
-            _context.Trainers.Add(trainer);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetTrainer", new { id = trainer.Id }, trainer);
+            try
+            {
+                return await _trainerService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching trainer: {ex.Message}");
+            }
         }
+        
+        [HttpPost]
+        public async Task<ActionResult<TrainerDto>> PostTrainer(TrainerCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-        // DELETE: api/Trainer/5
+            try
+            {
+                var trainer = _mapper.Map<Trainer>(dto);
+                return await _trainerService.CreateEntityAsync(trainer)
+                    ? CreatedAtAction(nameof(GetTrainer), new { id = trainer.Id }, _mapper.Map<TrainerDto>(trainer))
+                    : BadRequest("Failed to create trainer.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating trainer: {ex.Message}");
+            }
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainer(int id)
         {
-            var trainer = await _context.Trainers.FindAsync(id);
-            if (trainer == null)
+            try
             {
-                return NotFound();
+                return await _trainerService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Trainer with ID {id} not found.");
             }
-
-            _context.Trainers.Remove(trainer);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool TrainerExists(int id)
-        {
-            return _context.Trainers.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting trainer: {ex.Message}");
+            }
         }
     }
 }

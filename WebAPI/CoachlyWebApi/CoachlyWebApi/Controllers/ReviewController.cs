@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.Review;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,123 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class ReviewController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<Review> _reviewService;
+        private readonly IMapper _mapper;
 
-        public ReviewController(CoachlyDbContext context)
+        public ReviewController(ICrudService<Review> reviewService, IMapper mapper)
         {
-            _context = context;
+            _reviewService = reviewService;
+            _mapper = mapper;
         }
 
-        // GET: api/Review
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Review>>> GetReviews()
+        public async Task<ActionResult<IEnumerable<ReviewDto>>> GetAllReviews()
         {
-            return await _context.Reviews.ToListAsync();
-        }
-
-        // GET: api/Review/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Review>> GetReview(int id)
-        {
-            var review = await _context.Reviews.FindAsync(id);
-
-            if (review == null)
-            {
-                return NotFound();
-            }
-
-            return review;
-        }
-
-        // PUT: api/Review/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutReview(int id, Review review)
-        {
-            if (id != review.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(review).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var reviews = await _reviewService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<ReviewDto>>(reviews));
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!ReviewExists(id))
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<ReviewDto>> GetReview(int id)
+        {
+            try
+            {
+                var review = await _reviewService.GetEntityByIdAsync(id);
+
+                if (review == null)
                 {
                     return NotFound();
                 }
-                else
-                {
-                    throw;
-                }
+
+                return Ok(_mapper.Map<ReviewDto>(review));
             }
-
-            return NoContent();
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving reviews: {e.Message}");
+            }
         }
 
-        // POST: api/Review
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Review>> PostReview(Review review)
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutReview(int id, ReviewDto dto)
         {
-            _context.Reviews.Add(review);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetReview", new { id = review.Id }, review);
+            try
+            {
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _reviewService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Review with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error updating review: {ex.Message}");
+            }
+        }
+        
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchReview(int id, ReviewUpdateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                return await _reviewService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Review with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching review: {ex.Message}");
+            }
         }
 
-        // DELETE: api/Review/5
+        [HttpPost]
+        public async Task<ActionResult<ReviewDto>> PostReview(ReviewCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var review = _mapper.Map<Review>(dto);
+                return await _reviewService.CreateEntityAsync(review)
+                    ? CreatedAtAction(nameof(GetReview), new { id = review.Id }, _mapper.Map<ReviewDto>(review))
+                    : BadRequest("Failed to create review.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating review: {ex.Message}");
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {
-            var review = await _context.Reviews.FindAsync(id);
-            if (review == null)
+            try
             {
-                return NotFound();
+                return await _reviewService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Review with ID {id} not found.");
             }
-
-            _context.Reviews.Remove(review);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool ReviewExists(int id)
-        {
-            return _context.Reviews.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting review: {ex.Message}");
+            }
         }
     }
 }

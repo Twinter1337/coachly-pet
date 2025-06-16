@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.Specialization;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,124 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class SpecializationController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<Specialization> _specializationService;
+        private readonly IMapper _mapper;
 
-        public SpecializationController(CoachlyDbContext context)
+        public SpecializationController(ICrudService<Specialization> specializationService, IMapper mapper)
         {
-            _context = context;
+            _specializationService = specializationService;
+            _mapper = mapper;
         }
-
-        // GET: api/Specialization
+        
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Specialization>>> GetSpecializations()
+        public async Task<ActionResult<IEnumerable<SpecializationDto>>> GetAllSpecializations()
         {
-            return await _context.Specializations.ToListAsync();
-        }
+            try
+            {
+                var specializations = await _specializationService.GetAllEntitiesAsync();
 
-        // GET: api/Specialization/5
+                return Ok(_mapper.Map<IEnumerable<SpecializationDto>>(specializations));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        
         [HttpGet("{id}")]
-        public async Task<ActionResult<Specialization>> GetSpecialization(int id)
+        public async Task<ActionResult<SpecializationDto>> GetSpecialization(int id)
         {
-            var specialization = await _context.Specializations.FindAsync(id);
-
-            if (specialization == null)
+            try
             {
-                return NotFound();
-            }
+                var specialization = await _specializationService.GetEntityByIdAsync(id);
 
-            return specialization;
+                if (specialization == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<SpecializationDto>(specialization));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving specialization: {e.Message}");
+            }
         }
-
-        // PUT: api/Specialization/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutSpecialization(int id, Specialization specialization)
+        public async Task<IActionResult> PutSpecialization(int id, SpecializationDto dto)
         {
-            if (id != specialization.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(specialization).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _specializationService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Specialization with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!SpecializationExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating specialization: {ex.Message}");
             }
-
-            return NoContent();
         }
-
-        // POST: api/Specialization
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Specialization>> PostSpecialization(Specialization specialization)
+        
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchSpecialization(int id, SpecializationUpdateDto dto)
         {
-            _context.Specializations.Add(specialization);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetSpecialization", new { id = specialization.Id }, specialization);
+            try
+            {
+                return await _specializationService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Specialization with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching specialization: {ex.Message}");
+            }
         }
 
-        // DELETE: api/Specialization/5
+        [HttpPost]
+        public async Task<ActionResult<SpecializationDto>> PostSpecialization(SpecializationCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var specialization = _mapper.Map<Specialization>(dto);
+                return await _specializationService.CreateEntityAsync(specialization)
+                    ? CreatedAtAction(nameof(GetSpecialization), new { id = specialization.Id },
+                        _mapper.Map<SpecializationDto>(specialization))
+                    : BadRequest("Failed to create specialization.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating specialization: {ex.Message}");
+            }
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSpecialization(int id)
         {
-            var specialization = await _context.Specializations.FindAsync(id);
-            if (specialization == null)
+            try
             {
-                return NotFound();
+                return await _specializationService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Specialization with ID {id} not found.");
             }
-
-            _context.Specializations.Remove(specialization);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool SpecializationExists(int id)
-        {
-            return _context.Specializations.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting specialization: {ex.Message}");
+            }
         }
     }
 }

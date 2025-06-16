@@ -1,11 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.TrainerDocument;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -13,95 +10,124 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class TrainerDocumentController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<TrainerDocument> _trainerDocumentService;
+        private readonly IMapper _mapper;
 
-        public TrainerDocumentController(CoachlyDbContext context)
+        public TrainerDocumentController(ICrudService<TrainerDocument> trainerDocumentService, IMapper mapper)
         {
-            _context = context;
+            _trainerDocumentService = trainerDocumentService;
+            _mapper = mapper;
         }
 
-        // GET: api/TrainerDocument
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<TrainerDocument>>> GetTrainerDocuments()
+        public async Task<ActionResult<IEnumerable<TrainerDocumentDto>>> GetAllTrainerDocuments()
         {
-            return await _context.TrainerDocuments.ToListAsync();
+            try
+            {
+                var trainerDocuments = await _trainerDocumentService.GetAllEntitiesAsync();
+
+                return Ok(_mapper.Map<IEnumerable<TrainerDocumentDto>>(trainerDocuments));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
-        // GET: api/TrainerDocument/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<TrainerDocument>> GetTrainerDocument(int id)
+        public async Task<ActionResult<TrainerDocumentDto>> GetTrainerDocument(int id)
         {
-            var trainerDocument = await _context.TrainerDocuments.FindAsync(id);
-
-            if (trainerDocument == null)
+            try
             {
-                return NotFound();
-            }
+                var trainerDocument = await _trainerDocumentService.GetEntityByIdAsync(id);
 
-            return trainerDocument;
+                if (trainerDocument == null)
+                {
+                    return NoContent();
+                }
+
+                return Ok(_mapper.Map<TrainerDocumentDto>(trainerDocument));
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, $"Error retrieving Locations: {e.Message}");
+            }
         }
 
-        // PUT: api/TrainerDocument/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutTrainerDocument(int id, TrainerDocument trainerDocument)
+        public async Task<IActionResult> PutTrainerDocument(int id, TrainerDocumentDto dto)
         {
-            if (id != trainerDocument.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(trainerDocument).State = EntityState.Modified;
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
             try
             {
-                await _context.SaveChangesAsync();
+                if (id != dto.Id)
+                {
+                    return BadRequest("Ids must match");
+                }
+
+                return await _trainerDocumentService.UpdateEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer document with ID {id} not found.");
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!TrainerDocumentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return StatusCode(500, $"Error updating Trainer document: {ex.Message}");
             }
-
-            return NoContent();
         }
 
-        // POST: api/TrainerDocument
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<TrainerDocument>> PostTrainerDocument(TrainerDocument trainerDocument)
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> PatchTrainerDocument(int id, TrainerDocumentUpdateDto dto)
         {
-            _context.TrainerDocuments.Add(trainerDocument);
-            await _context.SaveChangesAsync();
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            return CreatedAtAction("GetTrainerDocument", new { id = trainerDocument.Id }, trainerDocument);
+            try
+            {
+                return await _trainerDocumentService.PatchEntityAsync(id, dto)
+                    ? NoContent()
+                    : NotFound($"Trainer document with ID {id} not found.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error patching trainer document: {ex.Message}");
+            }
         }
 
-        // DELETE: api/TrainerDocument/5
+        [HttpPost]
+        public async Task<ActionResult<TrainerDocumentDto>> PostTrainerDocument(TrainerDocumentCreateDto dto)
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            try
+            {
+                var trainerDocument = _mapper.Map<TrainerDocument>(dto);
+                return await _trainerDocumentService.CreateEntityAsync(trainerDocument)
+                    ? CreatedAtAction(nameof(GetTrainerDocument), new { id = trainerDocument.Id },
+                        _mapper.Map<TrainerDocumentDto>(trainerDocument))
+                    : BadRequest("Failed to create trainer document.");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error creating trainer document: {ex.Message}");
+            }
+        }
+        
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerDocument(int id)
         {
-            var trainerDocument = await _context.TrainerDocuments.FindAsync(id);
-            if (trainerDocument == null)
+            try
             {
-                return NotFound();
+                return await _trainerDocumentService.DeleteEntityAsync(id)
+                    ? NoContent()
+                    : NotFound($"Trainer document with ID {id} not found.");
             }
-
-            _context.TrainerDocuments.Remove(trainerDocument);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool TrainerDocumentExists(int id)
-        {
-            return _context.TrainerDocuments.Any(e => e.Id == id);
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error deleting trainer document: {ex.Message}");
+            }
         }
     }
 }
