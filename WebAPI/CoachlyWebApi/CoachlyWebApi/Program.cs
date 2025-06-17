@@ -1,21 +1,28 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using CoachlyBackEnd.Config;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.Enums;
 using CoachlyBackEnd.Models.Mapping;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using CoachlyBackEnd.Services.Other;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
+using Stripe;
+using File = System.IO.File;
+using PaymentMethod = CoachlyBackEnd.Models.Enums.PaymentMethod;
+using Review = CoachlyBackEnd.Models.Review;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowLocalhost3000", policy =>
+    options.AddPolicy("AllowLocalhost", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://127.0.0.1:5500")
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -33,7 +40,6 @@ var dataSourceBuilder = new NpgsqlDataSourceBuilder(builder.Configuration.GetCon
 dataSourceBuilder.MapEnum<DocumentType>("document_type");
 dataSourceBuilder.MapEnum<PaymentMethod>("payment_method");
 dataSourceBuilder.MapEnum<PaymentStatus>("payment_status");
-dataSourceBuilder.MapEnum<SessionParticipantsStatus>("session_participants_status");
 dataSourceBuilder.MapEnum<SessionStatus>("session_status");
 dataSourceBuilder.MapEnum<SessionType>("session_type");
 dataSourceBuilder.MapEnum<UserRole>("user_role");
@@ -49,7 +55,6 @@ builder.Services.AddDbContext<CoachlyDbContext>(options =>
             o.MapEnum<DocumentType>("document_type");
             o.MapEnum<PaymentMethod>("payment_method");
             o.MapEnum<PaymentStatus>("payment_status");
-            o.MapEnum<SessionParticipantsStatus>("session_participants_status");
             o.MapEnum<SessionStatus>("session_status");
             o.MapEnum<SessionType>("session_type");
             o.MapEnum<UserRole>("user_role");
@@ -77,6 +82,19 @@ builder.Services.AddAuthentication("Bearer")
 
 builder.Services.AddAuthorization();
 
+//other services
+builder.Services.AddScoped<JwtAuthService>();
+builder.Services.AddScoped<PasswordHashService>();
+builder.Services.AddScoped<OtpService>();
+
+builder.Services.Configure<StripeSettings>(
+    builder.Configuration.GetSection("Stripe"));
+
+builder.Services.AddSingleton(resolver =>
+    resolver.GetRequiredService<IOptions<StripeSettings>>().Value);
+
+builder.Services.AddScoped<StripeService>();
+//Crud Services
 builder.Services.AddScoped<ICrudService<Location>, CrudService<Location>>();
 builder.Services.AddScoped<ICrudService<Payment>, CrudService<Payment>>();
 builder.Services.AddScoped<ICrudService<Review>, CrudService<Review>>();
@@ -101,8 +119,8 @@ builder.Services.AddSwaggerGen(c =>
         Description = "API for Coachly Web Application",
         Contact = new OpenApiContact
         {
-            Name = "Your Name",
-            Email = "contact@example.com"
+            Name = "Maxim Pantelii",
+            Email = "pantelejmax@gmail.com"
         }
     });
 
@@ -141,7 +159,7 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-app.UseCors("AllowLocalhost3000");
+app.UseCors("AllowLocalhost");
 
 if (app.Environment.IsDevelopment())
 {

@@ -13,7 +13,6 @@ public partial class CoachlyDbContext : DbContext
     public CoachlyDbContext(DbContextOptions<CoachlyDbContext> options)
         : base(options)
     {
-        
     }
 
     public virtual DbSet<Location> Locations { get; set; }
@@ -48,23 +47,11 @@ public partial class CoachlyDbContext : DbContext
             new NpgsqlDataSourceBuilder(
                 "Host=localhost;Port=5432;Database=CoachlyDB;Username=twinter;Password=koksaer123");
         // optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=CoachlyDB;Username=twinter;Password=koksaer123");
-        
+
         NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
-        
+
         dataSourceBuilder.EnableUnmappedTypes();
         var dataSource = dataSourceBuilder.Build();
-
-        // optionsBuilder.UseNpgsql(dataSource, o =>
-        // {
-        //     o.MapEnum<DocumentType>("document_type");
-        //     o.MapEnum<PaymentMethod>("payment_method");
-        //     o.MapEnum<PaymentStatus>("payment_status");
-        //     o.MapEnum<SessionParticipantsStatus>("session_participants_status");
-        //     o.MapEnum<SessionStatus>("session_status");
-        //     o.MapEnum<SessionType>("session_type");
-        //     o.MapEnum<UserRole>("user_role");
-        //     o.MapEnum<CurrencyType>("currency_type");
-        // });
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -72,8 +59,8 @@ public partial class CoachlyDbContext : DbContext
         modelBuilder
             .HasPostgresEnum("document_type", new[] { "certificate", "diploma" })
             .HasPostgresEnum("payment_method", new[] { "card", "cash" })
-            .HasPostgresEnum("payment_status", new[] { "pending", "succeeded", "failed", "canceled", "refunded", "expired", "in_review" })
-            .HasPostgresEnum("session_participants_status", new[] { "accepted", "pending", "rejected" })
+            .HasPostgresEnum("payment_status",
+                new[] { "pending", "succeeded", "failed", "canceled", "refunded", "expired", "in_review" })
             .HasPostgresEnum("session_status", new[] { "scheduled", "completed", "canceled" })
             .HasPostgresEnum("session_type", new[] { "individual", "group" })
             .HasPostgresEnum("user_role", new[] { "Client", "Trainer", "Admin" })
@@ -123,6 +110,10 @@ public partial class CoachlyDbContext : DbContext
             entity.Property(e => e.Status).HasColumnType("payment_status").HasColumnName("status");
             entity.Property(e => e.Currency).HasColumnType("currency_type").HasColumnName("currency");
             entity.Property(e => e.StripePaymentId).HasMaxLength(100).HasColumnName("stripe_payment_id");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+
+            entity.HasOne(d => d.User).WithMany(u => u.Payments).HasForeignKey(d => d.UserId)
+                .HasConstraintName("payments_user_id_fkey");
         });
 
         modelBuilder.Entity<Review>(entity =>
@@ -183,7 +174,7 @@ public partial class CoachlyDbContext : DbContext
             entity.HasOne(d => d.Trainer).WithMany(p => p.Sessions)
                 .HasForeignKey(d => d.TrainerId)
                 .HasConstraintName("sessions_trainer_id_fkey");
-            
+
             entity.Property(e => e.Status).HasColumnType("session_status").HasColumnName("status");
             entity.Property(e => e.Type).HasColumnType("session_type").HasColumnName("session_type");
         });
@@ -209,8 +200,6 @@ public partial class CoachlyDbContext : DbContext
             entity.HasOne(d => d.UserIsNavigation).WithMany(p => p.SessionParticipants)
                 .HasForeignKey(d => d.UserIs)
                 .HasConstraintName("session_participants_user_is_fkey");
-            
-            entity.Property(e => e.Status).HasColumnType("session_participants_status").HasColumnName("status");
         });
 
         modelBuilder.Entity<Specialization>(entity =>
@@ -376,7 +365,7 @@ public partial class CoachlyDbContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .HasColumnName("phone");
-            entity.Property(e=>e.Role).HasColumnType("user_role").HasColumnName("role");
+            entity.Property(e => e.Role).HasColumnType("user_role").HasColumnName("role");
         });
 
         modelBuilder.Entity<UserSubscribtion>(entity =>

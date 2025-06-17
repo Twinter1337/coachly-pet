@@ -2,7 +2,10 @@ using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.TrainerDtos;
+using CoachlyBackEnd.Models.Enums;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Newtonsoft.Json;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -54,6 +57,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTrainer(int id, TrainerDto dto)
         {
@@ -77,6 +81,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchTrainer(int id, TrainerUpdateDto dto)
         {
@@ -95,6 +100,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Client")]
         [HttpPost]
         public async Task<ActionResult<TrainerDto>> PostTrainer(TrainerCreateDto dto)
         {
@@ -104,6 +110,11 @@ namespace CoachlyWebApi.Controllers
             try
             {
                 var trainer = _mapper.Map<Trainer>(dto);
+                trainer.UserId = dto.UserId;
+                _trainerService.Context.Users.FirstOrDefault(e => e.Id == dto.UserId)!.Role = UserRole.Trainer; 
+
+                Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(trainer));
+                
                 return await _trainerService.CreateEntityAsync(trainer)
                     ? CreatedAtAction(nameof(GetTrainer), new { id = trainer.Id }, _mapper.Map<TrainerDto>(trainer))
                     : BadRequest("Failed to create trainer.");
@@ -114,6 +125,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainer(int id)
         {

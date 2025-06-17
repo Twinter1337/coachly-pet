@@ -1,6 +1,9 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.DTOs.Payment;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -8,95 +11,50 @@ namespace CoachlyWebApi.Controllers
     [ApiController]
     public class PaymentController : ControllerBase
     {
-        private readonly CoachlyDbContext _context;
+        private readonly ICrudService<Payment> _paymentService;
+        private readonly IMapper _mapper;
 
-        public PaymentController(CoachlyDbContext context)
+        public PaymentController(ICrudService<Payment> paymentService, IMapper mapper)
         {
-            _context = context;
+            _paymentService = paymentService;
+            _mapper = mapper;
         }
-
-        // GET: api/Payment
+        
+        [Authorize(Roles = "Admin")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
         {
-            return await _context.Payments.ToListAsync();
-        }
+            try
+            {
+                var payment = await _paymentService.GetAllEntitiesAsync();
 
-        // GET: api/Payment/5
+                return Ok(_mapper.Map<IEnumerable<PaymentDto>>(payment));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+        
+        [Authorize(Roles = "Admin")]
         [HttpGet("{id}")]
         public async Task<ActionResult<Payment>> GetPayment(int id)
         {
-            var payment = await _context.Payments.FindAsync(id);
-
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            return payment;
-        }
-
-        // PUT: api/Payment/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPayment(int id, Payment payment)
-        {
-            if (id != payment.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(payment).State = EntityState.Modified;
-
             try
             {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PaymentExists(id))
+                var payment = await _paymentService.GetEntityByIdAsync(id);
+
+                if (payment == null)
                 {
-                    return NotFound();
+                    return NoContent();
                 }
-                else
-                {
-                    throw;
-                }
+
+                return Ok(_mapper.Map<PaymentDto>(payment));
             }
-
-            return NoContent();
-        }
-
-        // POST: api/Payment
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Payment>> PostPayment(Payment payment)
-        {
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetPayment", new { id = payment.Id }, payment);
-        }
-
-        // DELETE: api/Payment/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePayment(int id)
-        {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null)
+            catch (Exception e)
             {
-                return NotFound();
+                return StatusCode(500, $"Error retrieving Payments: {e.Message}");
             }
-
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool PaymentExists(int id)
-        {
-            return _context.Payments.Any(e => e.Id == id);
         }
     }
 }

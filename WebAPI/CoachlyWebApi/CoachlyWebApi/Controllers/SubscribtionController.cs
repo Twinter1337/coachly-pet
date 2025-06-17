@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.Subscribtion;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -54,6 +55,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSubscribtion(int id, SubscribtionDto dto)
         {
@@ -77,6 +79,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchSubscribtion(int id, SubscribtionUpdateDto dto)
         {
@@ -95,6 +98,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPost]
         public async Task<ActionResult<SubscribtionDto>> PostSubscribtion(SubscribtionCreateDto dto)
         {
@@ -115,6 +119,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSubscribtion(int id)
         {

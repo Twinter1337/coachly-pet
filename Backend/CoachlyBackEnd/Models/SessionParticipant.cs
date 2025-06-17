@@ -11,8 +11,6 @@ public partial class SessionParticipant
     public int? UserIs { get; set; }
 
     public DateTime JoinedAt { get; set; }
-    
-    public SessionParticipantsStatus Status { get; set; }
 
     public virtual Session? Session { get; set; }
 

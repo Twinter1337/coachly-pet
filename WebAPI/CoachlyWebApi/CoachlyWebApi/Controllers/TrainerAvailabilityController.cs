@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.TrainerAvailability;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -55,6 +56,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTrainerAvailability(int id, TrainerAvailabilityDto dto)
         {
@@ -78,6 +80,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchTrainerAvailability(int id, TrainerAvailabilityUpdateDto dto)
         {
@@ -96,6 +99,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPost]
         public async Task<ActionResult<TrainerAvailability>> PostTrainerAvailability(TrainerAvailabilityCreateDto dto)
         {
@@ -115,7 +119,8 @@ namespace CoachlyWebApi.Controllers
                 return StatusCode(500, $"Error creating trainer availability: {ex.Message}");
             }
         }
-        
+
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerAvailability(int id)
         {

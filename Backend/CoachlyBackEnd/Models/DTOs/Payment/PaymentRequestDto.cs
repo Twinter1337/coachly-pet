@@ -6,6 +6,7 @@ public class PaymentRequestDto
 {
     public decimal Amount { get; set; }
     public CurrencyType Currency { get; set; }
-    public string SuccessUrl { get; set; }
-    public string CancelUrl { get; set; }
+    public int UserId { get; set; }
+    public int? SessionId { get; set; }
+    public int? SubscriptionId { get; set; }
 }

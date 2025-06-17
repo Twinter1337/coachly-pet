@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.Location;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers;
 
@@ -54,6 +55,7 @@ public class LocationController : ControllerBase
         }
     }
     
+    [Authorize(Roles = "Admin, Trainer")]
     [HttpPut("{id}")]
     public async Task<IActionResult> PutLocation(int id, LocationDto dto)
     {
@@ -77,6 +79,7 @@ public class LocationController : ControllerBase
         }
     }
     
+    [Authorize(Roles = "Admin, Trainer")]
     [HttpPatch("{id}")]
     public async Task<IActionResult> PatchLocation(int id, LocationUpdateDto dto)
     {
@@ -95,6 +98,7 @@ public class LocationController : ControllerBase
         }
     }
     
+    [Authorize(Roles = "Admin, Trainer")]
     [HttpPost]
     public async Task<ActionResult<LocationDto>> PostLocation(LocationCreateDto dto)
     {
@@ -114,6 +118,7 @@ public class LocationController : ControllerBase
         }
     }
     
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteLocation(int id)
     {

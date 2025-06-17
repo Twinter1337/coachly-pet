@@ -1,13 +1,13 @@
-﻿using AutoMapper;
-using CoachlyBackEnd.Models;
-using CoachlyBackEnd.Models.DTOs.UserDtos;
-using CoachlyBackEnd.Models.Enums;
-using CoachlyBackEnd.Models.Mapping;
-using Microsoft.AspNetCore.Identity;
+﻿using CoachlyBackEnd.Models;
+
+Console.WriteLine("Hello World!");
 
 
 var context = new CoachlyDbContext();
 
+// var stripe = new StripeService(context);
+
+// var context = new CoachlyDbContext();
 // List<User> users = context.Users.ToList();
 // List<Location> locations = context.Locations.ToList();
 // List<Payment> payments = context.Payments.ToList();

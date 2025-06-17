@@ -1,16 +1,14 @@
 using System.ComponentModel.DataAnnotations;
-using CoachlyBackEnd.Models.DTOs.Location;
-using CoachlyBackEnd.Models.DTOs.UserDtos;
 
 namespace CoachlyBackEnd.Models.DTOs.TrainerDtos;
 
 public class TrainerCreateDto
 {
     [Required]
-    public UserCreateDto User { get; set; }
+    public int UserId { get; set; }
     
     [Required]
     public string Bio { get; set; }
     
-    public LocationCreateDto Location { get; set; }
+    public int? LocationId { get; set; }
 }

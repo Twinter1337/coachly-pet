@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.UserSubscibtion;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -18,7 +19,8 @@ namespace CoachlyWebApi.Controllers
             _userSubscribtionService = _userSubscribtion;
             _mapper = mapper;
         }
-
+        
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<UserSubscribtionDto>>> GetAllUserSubscribtions()
         {
@@ -34,6 +36,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<UserSubscribtionDto>> GetUserSubscribtion(int id)
         {
@@ -54,6 +57,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUserSubscribtion(int id, UserSubscribtionDto dto)
         {
@@ -77,6 +81,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchUserSubscribtion(int id, UserSubscribtionUpdateDto dto)
         {
@@ -95,6 +100,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<UserSubscribtionDto>> PostUserSubscribtion(UserSubscribtionCreateDto dto)
         {
@@ -115,6 +121,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUserSubscribtion(int id)
         {

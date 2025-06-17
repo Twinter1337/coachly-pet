@@ -25,10 +25,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="Controllers\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="/Users/twinter/Documents/Lapitech/NTP/Coachly/Backend/CoachlyBackEnd/CoachlyBackEnd.csproj" />
     </ItemGroup>
 

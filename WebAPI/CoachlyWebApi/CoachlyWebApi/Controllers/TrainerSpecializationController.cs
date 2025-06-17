@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.TrainerSpecialization;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -55,6 +56,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTrainerSpecialization(int id, TrainerSpecializationDto dto)
         {
@@ -78,6 +80,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchTrainerSpecialization(int id, TrainerSpecializationUpdateDto dto)
         {
@@ -96,6 +99,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPost]
         public async Task<ActionResult<TrainerSpecializationDto>> PostTrainerSpecialization(
             TrainerSpecializationCreateDto dto)
@@ -117,6 +121,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerSpecialization(int id)
         {

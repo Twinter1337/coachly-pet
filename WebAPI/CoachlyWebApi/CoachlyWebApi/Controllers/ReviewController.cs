@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.Review;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -54,6 +55,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Client")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutReview(int id, ReviewDto dto)
         {
@@ -77,6 +79,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Client")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchReview(int id, ReviewUpdateDto dto)
         {
@@ -95,6 +98,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Client")]
         [HttpPost]
         public async Task<ActionResult<ReviewDto>> PostReview(ReviewCreateDto dto)
         {
@@ -114,6 +118,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Client")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {

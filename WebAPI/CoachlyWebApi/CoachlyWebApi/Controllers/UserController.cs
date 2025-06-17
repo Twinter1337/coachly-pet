@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.UserDtos;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -54,6 +55,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, UserDto dto)
         {
@@ -77,6 +79,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchUser(int id, UserUpdateDto dto)
         {
@@ -94,7 +97,7 @@ namespace CoachlyWebApi.Controllers
                 return StatusCode(500, $"Error patching user: {ex.Message}");
             }
         }
-
+        
         [HttpPost]
         public async Task<ActionResult<UserDto>> PostUser(UserCreateDto dto)
         {
@@ -114,6 +117,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {

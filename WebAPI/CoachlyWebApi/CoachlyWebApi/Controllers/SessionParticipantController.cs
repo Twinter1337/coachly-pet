@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.SessionParticipants;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -19,6 +20,7 @@ namespace CoachlyWebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SessionParticipantDto>>> GetAllSessionParticipants()
         {
@@ -34,6 +36,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<SessionParticipantDto>> GetSessionParticipant(int id)
         {
@@ -54,6 +57,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSessionParticipant(int id, SessionParticipantDto dto)
         {
@@ -77,6 +81,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchSessionParticipant(int id, SessionParticipantUpdateDto dto)
         {
@@ -95,6 +100,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<SessionParticipantDto>> PostSessionParticipant(
             SessionParticipantCreateDto dto)
@@ -116,6 +122,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSessionParticipant(int id)
         {

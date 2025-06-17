@@ -29,11 +29,16 @@ public class MappingProfile : Profile
 
         #region Trainer
 
-        CreateMap<Trainer, TrainerCreateDto>()
+        CreateMap<Trainer, TrainerRegisterDto>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User))
+            .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location));
+        
+        CreateMap<TrainerRegisterDto, Trainer>()
             .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
-            .ReverseMap();
+            .ForMember(dest => dest.User, opt => opt.Ignore()); 
+        
         CreateMap<Trainer, TrainerDto>().ReverseMap();
+        CreateMap<Trainer, TrainerCreateDto>().ReverseMap();
         CreateMap<Trainer, TrainerUpdateDto>().ReverseMap();
 
         #endregion

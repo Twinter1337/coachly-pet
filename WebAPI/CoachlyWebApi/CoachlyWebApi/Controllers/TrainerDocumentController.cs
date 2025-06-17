@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.TrainerDocument;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -19,6 +20,7 @@ namespace CoachlyWebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<TrainerDocumentDto>>> GetAllTrainerDocuments()
         {
@@ -34,6 +36,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<TrainerDocumentDto>> GetTrainerDocument(int id)
         {
@@ -54,6 +57,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutTrainerDocument(int id, TrainerDocumentDto dto)
         {
@@ -77,6 +81,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchTrainerDocument(int id, TrainerDocumentUpdateDto dto)
         {
@@ -95,6 +100,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPost]
         public async Task<ActionResult<TrainerDocumentDto>> PostTrainerDocument(TrainerDocumentCreateDto dto)
         {
@@ -115,6 +121,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteTrainerDocument(int id)
         {

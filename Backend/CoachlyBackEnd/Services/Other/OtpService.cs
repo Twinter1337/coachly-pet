@@ -11,7 +11,7 @@ public class OtpService
     private readonly SmtpClient _smtpClient;
     private readonly IMemoryCache _memoryCache;
     private readonly Random _random = new();
-    
+
     public OtpService(IMemoryCache memoryCache, IConfiguration config)
     {
         _memoryCache = memoryCache;
@@ -35,8 +35,8 @@ public class OtpService
 
             var message = new MailMessage(_emailFrom, emailTo)
             {
-                Subject = "BeePC account verification",
-                // Body = GenerateHtmlEmailBody(verificationCode),
+                Subject = "Coachly account verification",
+                Body = GenerateHtmlEmailBody(verificationCode),
                 IsBodyHtml = true
             };
 
@@ -67,64 +67,72 @@ public class OtpService
     private string GenerateVerificationCode()
         => _random.Next(10000, 99999).ToString();
 
-//     private string GenerateHtmlEmailBody(string code)
-//     {
-//         return $$"""
-//                  <html>
-//                      <head>
-//                          <style>
-//                              body {
-//                                  background-color: #f5f5f5;
-//                                  font-family: 'Segoe UI', sans-serif;
-//                                  padding: 20px;
-//                              }
-//                              .container {
-//                                  background-color: #ffffff;
-//                                  padding: 30px;
-//                                  max-width: 600px;
-//                                  margin: auto;
-//                                  border-radius: 10px;
-//                                  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-//                              }
-//                              .header {
-//                                  text-align: center;
-//                              }
-//                              .logo {
-//                                  width: 100px;
-//                                  margin-bottom: 20px;
-//                              }
-//                              .code {
-//                                  font-size: 32px;
-//                                  color: #eacf00;
-//                                  font-weight: bold;
-//                                  margin: 30px 0;
-//                                  text-align: center;
-//                              }
-//                              .footer {
-//                                  font-size: 12px;
-//                                  color: #777;
-//                                  text-align: center;
-//                                  margin-top: 40px;
-//                              }
-//                          </style>
-//                      </head>
-//                      <body>
-//                          <div class="container">
-//                              <div class="header">
-//                                  <img src="{{logoUrl}}" alt="BeePC Logo" class="logo" />
-//                                  <h2>Verify your email address</h2>
-//                              </div>
-//                              <p>Hello 👋,</p>
-//                              <p>Here is your one-time verification code for BeePC:</p>
-//                              <div class="code" style="color: #eacf00;">{{code}}</div>
-//                              <p>This code will expire in 5 minutes.</p>
-//                              <p>If you didn't request this, please ignore the email.</p>
-//                              <div class="footer">
-//                                  BeePC © {{DateTime.UtcNow.Year}}. All rights reserved.
-//                              </div>
-//                          </div>
-//                      </body>
-//                  </html>
-//                  """;
-//     }
+    private string GenerateHtmlEmailBody(string code)
+    {
+        return $$$"""
+                  <html>
+
+                  <head>
+                    <style>
+                      body {
+                        background-color: #f5f5f5;
+                        font-family: 'Segoe UI', sans-serif;
+                        padding: 20px;
+                      }
+                  
+                      .container {
+                        background-color: #2a2e2e;
+                        color: #f5f5f5;
+                        padding: 30px;
+                        max-width: 600px;
+                        margin: auto;
+                        border-radius: 10px;
+                        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+                      }
+                  
+                      .header {
+                        text-align: center;
+                      }
+                  
+                      .logo {
+                        width: 100px;
+                        margin-bottom: 20px;
+                      }
+                  
+                      .code {
+                        font-size: 32px;
+                        color: #59ff00;
+                        font-weight: bold;
+                        margin: 30px 0;
+                        text-align: center;
+                      }
+                  
+                      .footer {
+                        font-size: 12px;
+                        color: #777;
+                        text-align: center;
+                        margin-top: 40px;
+                      }
+                    </style>
+                  </head>
+
+                  <body>
+                    <div class="container">
+                      <div class="header">
+                        <h2>Verify your email address</h2>
+                      </div>
+                      <p>Hello!</p>
+                      <p>Here is your one-time verification code for Coachly:</p>
+                      <div class="code" style="color: #59ff00;">{{{code}}}</div>
+                      <p>This code will expire in 5 minutes.</p>
+                      <p>If you didn't request this, please ignore the email.</p>
+                      <div class="footer">
+                        BeePC © {{DateTime.UtcNow.Year}}. All rights reserved.
+                      </div>
+                    </div>
+                  </body>
+
+                  </html>
+                  """;
+    }
 }

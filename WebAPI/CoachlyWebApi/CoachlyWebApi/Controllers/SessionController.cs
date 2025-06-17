@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using CoachlyBackEnd.Models;
 using CoachlyBackEnd.Models.DTOs.Session;
 using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace CoachlyWebApi.Controllers
 {
@@ -19,6 +20,7 @@ namespace CoachlyWebApi.Controllers
             _mapper = mapper;
         }
 
+        [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SessionDto>>> GetAllSessions()
         {
@@ -34,6 +36,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<SessionDto>> GetSession(int id)
         {
@@ -48,7 +51,8 @@ namespace CoachlyWebApi.Controllers
                 return StatusCode(500, $"Error retrieving session: {ex.Message}");
             }
         }
-
+        
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPut("{id}")]
         public async Task<IActionResult> PutSession(int id, SessionDto dto)
         {
@@ -72,6 +76,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
         
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPatch("{id}")]
         public async Task<IActionResult> PatchSession(int id, SessionUpdateDto dto)
         {
@@ -90,6 +95,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpPost]
         public async Task<ActionResult<SessionDto>> PostSession(SessionCreateDto dto)
         {
@@ -109,6 +115,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
+        [Authorize(Roles = "Admin, Trainer")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteSession(int id)
         {
