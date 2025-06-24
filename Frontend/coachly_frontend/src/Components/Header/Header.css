@@ -1,0 +1,16 @@
+.header-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  width: 100%;
+
+
+  height: 75px;
+  background-color: var(--color-tertiary);
+  display: flex;
+  align-items: center;
+
+  padding: 0 15px;
+  min-height: 4rem;
+}

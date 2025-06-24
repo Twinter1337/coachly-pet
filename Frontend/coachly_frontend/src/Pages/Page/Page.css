@@ -1,0 +1,7 @@
+.page-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding-top: 75px;
+  padding-left: 15px;
+  padding-right: 15px;
+}

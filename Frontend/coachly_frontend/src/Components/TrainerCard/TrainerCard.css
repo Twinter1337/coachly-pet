@@ -1,0 +1,58 @@
+.trainer-card {
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.trainer-card:hover {
+  transform: translateY(-4px);
+}
+
+.trainer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trainer-name {
+  font-size: 1.9rem;
+  font-weight: 600;
+}
+
+.trainer-rating {
+  font-size: 1.2rem;
+}
+
+.trainer-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.specializations-line {
+  font-style: italic;
+}
+
+.trainer-bio,
+.trainer-location {
+  line-height: 1.4;
+}
+
+.trainer-controls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.signup-button {
+  background-color: var(--color-quinary);
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+
+  transition: background-color 0.3s;
+}
