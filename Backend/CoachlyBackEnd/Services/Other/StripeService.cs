@@ -45,31 +45,6 @@ public class StripeService
     var paymentIntentService = new PaymentIntentService(client);
     var paymentIntent = await paymentIntentService.GetAsync(paymentIntentId);
     
-    // //--------------------------------------------------ONLY FOR TEST---------------------------------------------------
-    // if (paymentIntent.Status != "succeeded")
-    // {
-    //     var paymentMethodService = new PaymentMethodService(client);
-    //     var paymentMethod = await paymentMethodService.CreateAsync(new PaymentMethodCreateOptions
-    //     {
-    //         Type = "card",
-    //         Card = new PaymentMethodCardOptions
-    //         {
-    //             Number = "4242424242424242",
-    //             ExpMonth = 12,
-    //             ExpYear = 2030,
-    //             Cvc = "123",
-    //         },
-    //     });
-    //
-    //     var confirmOptions = new PaymentIntentConfirmOptions
-    //     {
-    //         PaymentMethod = paymentMethod.Id
-    //     };
-    //
-    //     paymentIntent = await paymentIntentService.ConfirmAsync(paymentIntentId, confirmOptions);
-    // }
-    // //------------------------------------------------------------------------------------------------------------------
-    
     if (paymentIntent.Status != "succeeded" || paymentIntent.AmountReceived == 0)
     {
         return null;

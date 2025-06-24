@@ -30,11 +30,9 @@ public class MappingProfile : Profile
         #region Trainer
 
         CreateMap<Trainer, TrainerRegisterDto>()
-            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User))
-            .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location));
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => src.User));
         
         CreateMap<TrainerRegisterDto, Trainer>()
-            .ForMember(dest => dest.Location, opt => opt.MapFrom(src => src.Location))
             .ForMember(dest => dest.User, opt => opt.Ignore()); 
         
         CreateMap<Trainer, TrainerDto>().ReverseMap();

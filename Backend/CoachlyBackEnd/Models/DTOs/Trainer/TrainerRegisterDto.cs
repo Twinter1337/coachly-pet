@@ -11,6 +11,4 @@ public class TrainerRegisterDto
     
     [Required]
     public string Bio { get; set; }
-    
-    public LocationCreateDto Location { get; set; }
 }

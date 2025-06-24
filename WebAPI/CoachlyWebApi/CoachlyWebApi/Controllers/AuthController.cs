@@ -48,13 +48,13 @@ public class AuthController : ControllerBase
         _cache.Set($"pendingLogin:{dto.Email}", user.Id, TimeSpan.FromMinutes(5));
 
         var otpSent = await _otpService.SendOtpToEmailAsync(dto.Email);
-        if (!otpSent) return StatusCode(500, "Не вдалося надіслати OTP");
+        if (!otpSent) return StatusCode(500, "Error of sending OTP.");
 
-        return Ok("OTP надіслано на email.");
+        return Ok("OTP sent successfully.");
     }
 
     [HttpPost("register-client")]
-    public IActionResult RegisterClient([FromBody] UserCreateDto dto)
+    public async Task<IActionResult> RegisterClient([FromBody] UserCreateDto dto)
     {
         if (_dbContext.Users.Any(u => u.Email == dto.Email))
         {
@@ -65,14 +65,14 @@ public class AuthController : ControllerBase
 
         user.PasswordHash = _passwordHashService.HashPassword(user.PasswordHash);
 
-        _dbContext.Users.Add(user);
-        _dbContext.SaveChanges();
+        await _dbContext.Users.AddAsync(user);
+        await _dbContext.SaveChangesAsync();
 
-        return Ok("User registered successfully.");
+        return Ok(_mapper.Map<UserDto>(_dbContext.Users.FirstOrDefault(u => u.Email == dto.Email)));
     }
 
     [HttpPost("register-trainer")]
-    public IActionResult RegisterTrainer([FromBody] TrainerRegisterDto dto)
+    public async Task<IActionResult> RegisterTrainer([FromBody] TrainerRegisterDto dto)
     {
         if (_dbContext.Users.Any(u => u.Email == dto.User.Email))
         {
@@ -84,9 +84,9 @@ public class AuthController : ControllerBase
         var user = _mapper.Map<User>(dto.User);
         var trainer = _mapper.Map<Trainer>(dto);
 
-        _dbContext.Users.Add(user);
+        await _dbContext.Users.AddAsync(user);
         user.Role = UserRole.Trainer;
-        _dbContext.SaveChanges();
+        await _dbContext.SaveChangesAsync();
         
         trainer.UserId = _dbContext.Users.FirstOrDefault(u => u.Email == user.Email)?.Id;
 
@@ -95,10 +95,16 @@ public class AuthController : ControllerBase
             return BadRequest("Trainer creation error.");
         }
 
-        _dbContext.Trainers.Add(trainer);
-        _dbContext.SaveChanges();
+        await _dbContext.Trainers.AddAsync(trainer);
+        await _dbContext.SaveChangesAsync();
 
-        return Ok("Trainer registered successfully.");
+        var response = new TrainerRegistrationResponceDto()
+        {
+            User = _mapper.Map<UserDto>(user),
+            Trainer = _mapper.Map<TrainerDto>(trainer),
+        };
+
+        return Ok(response);
     }
 
     [HttpPost("verify-otp")]
@@ -128,6 +134,13 @@ public class AuthController : ControllerBase
         var token = _jwtService.GenerateJwtToken(user);
         _cache.Remove($"pendingLogin:{dto.Email}");
 
-        return Ok(new { token });
+        var verifyResponse = new VerifyResponse()
+        {
+            Token = token,  
+            User = _mapper.Map<UserDto>(user),
+            Trainer = _mapper.Map<TrainerDto>(_dbContext.Trainers.FirstOrDefault(t => t.UserId == userId))
+        };
+        
+        return Ok(verifyResponse);
     }
 }

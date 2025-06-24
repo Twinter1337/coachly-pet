@@ -4,6 +4,10 @@ using CoachlyBackEnd.Services.Other;
 using Microsoft.AspNetCore.Mvc;
 using Stripe;
 using CoachlyBackEnd.Config;
+using CoachlyBackEnd.Models;
+using CoachlyBackEnd.Models.Enums;
+using CoachlyBackEnd.Services.CRUD.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoachlyWebApi.Controllers;
 
@@ -14,15 +18,18 @@ public class StripePaymentController : ControllerBase
     private readonly StripeService _stripeService;
     private readonly IMapper _mapper;
     private readonly StripeSettings _stripeSettings;
+    private readonly CoachlyDbContext _dbContext;
 
     public StripePaymentController(
         StripeService stripeService,
         IMapper mapper,
-        StripeSettings stripeSettings)
+        StripeSettings stripeSettings,
+        CoachlyDbContext dbContext)
     {
         _stripeService = stripeService;
         _mapper = mapper;
         _stripeSettings = stripeSettings;
+        _dbContext = dbContext;
     }
 
     [HttpPost("create-intent")]
@@ -48,6 +55,11 @@ public class StripePaymentController : ControllerBase
         var refund = await _stripeService.RefundPayment(paymentIntentId);
         if (refund == null)
             return BadRequest("Refund failed");
+        
+        var payment = await _dbContext.Payments.FirstOrDefaultAsync(p=>p.StripePaymentId == paymentIntentId);
+        if (payment != null) payment.Status = PaymentStatus.Refunded;
+        
+        await _dbContext.SaveChangesAsync();
 
         return Ok(new
         {
@@ -74,7 +86,6 @@ public class StripePaymentController : ControllerBase
         }
         catch (Exception e)
         {
-            Console.WriteLine("⚠️ Webhook signature error: " + e.Message);
             return BadRequest($"Webhook Error: {e.Message}");
         }
 
@@ -85,14 +96,12 @@ public class StripePaymentController : ControllerBase
                 var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
                 if (paymentIntent != null)
                 {
-                    Console.WriteLine($"✅ Processing payment_intent.succeeded: {paymentIntent.Id}");
                     await _stripeService.HandlePaymentSuccess(paymentIntent.Id);
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Webhook internal error: {ex.Message}");
             Console.WriteLine(ex.StackTrace);
             return StatusCode(500, "Webhook error: " + ex.Message);
         }

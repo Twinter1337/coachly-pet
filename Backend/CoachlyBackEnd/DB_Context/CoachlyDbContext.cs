@@ -104,7 +104,7 @@ public partial class CoachlyDbContext : DbContext
                 .HasColumnName("amount");
             entity.Property(e => e.PaymentDate)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("payment_date");
             entity.Property(e => e.Method).HasColumnType("payment_method").HasColumnName("payment_method");
             entity.Property(e => e.Status).HasColumnType("payment_status").HasColumnName("status");
@@ -125,7 +125,7 @@ public partial class CoachlyDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("created_at");
             entity.Property(e => e.Rating)
                 .HasPrecision(2, 1)
@@ -163,7 +163,7 @@ public partial class CoachlyDbContext : DbContext
                 .HasPrecision(10, 2)
                 .HasColumnName("price");
             entity.Property(e => e.ScheduledAt)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("scheduled_at");
             entity.Property(e => e.TrainerId).HasColumnName("trainer_id");
 
@@ -188,7 +188,7 @@ public partial class CoachlyDbContext : DbContext
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.JoinedAt)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("joined_at");
             entity.Property(e => e.SessionId).HasColumnName("session_id");
             entity.Property(e => e.UserIs).HasColumnName("user_is");
@@ -299,11 +299,11 @@ public partial class CoachlyDbContext : DbContext
 
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.ExpirationDate)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("expiration_date");
             entity.Property(e => e.FileName).HasColumnName("file_name");
             entity.Property(e => e.IssuedDate)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("issued_date");
             entity.Property(e => e.Title)
                 .HasMaxLength(100)
@@ -311,7 +311,7 @@ public partial class CoachlyDbContext : DbContext
             entity.Property(e => e.TrainerId).HasColumnName("trainer_id");
             entity.Property(e => e.UploadedAt)
                 .HasDefaultValueSql("now()")
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .HasColumnName("uploaded_at");
 
             entity.HasOne(d => d.Trainer).WithMany(p => p.TrainerDocuments)

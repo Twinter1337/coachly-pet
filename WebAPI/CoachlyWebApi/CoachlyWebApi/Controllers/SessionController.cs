@@ -20,7 +20,7 @@ namespace CoachlyWebApi.Controllers
             _mapper = mapper;
         }
 
-        [Authorize]
+        // [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SessionDto>>> GetAllSessions()
         {
@@ -36,7 +36,7 @@ namespace CoachlyWebApi.Controllers
             }
         }
 
-        [Authorize]
+        // [Authorize]
         [HttpGet("{id}")]
         public async Task<ActionResult<SessionDto>> GetSession(int id)
         {

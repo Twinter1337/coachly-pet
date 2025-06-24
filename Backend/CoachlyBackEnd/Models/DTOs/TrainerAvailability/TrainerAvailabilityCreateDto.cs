@@ -11,8 +11,8 @@ public class TrainerAvailabilityCreateDto
     public int DayOfWeek { get; set; }
 
     [Required]
-    public DateTime StartTime { get; set; }
+    public TimeOnly StartTime { get; set; }
 
     [Required]
-    public DateTime EndTime { get; set; }
+    public TimeOnly EndTime { get; set; }
 }
